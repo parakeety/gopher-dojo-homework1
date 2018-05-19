@@ -52,7 +52,7 @@ func Converter() CommandLine {
 
 func (c *converter) Execute() error {
 	if len(flag.Args()) == 0 {
-		return errors.New("please pass the directory where images you'd like exist")
+		return errors.New("please pass the directory where images you'd like to convert exist")
 	}
 
 	dirRoot := flag.Args()[0]
