@@ -14,7 +14,7 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
-	"github.com/go-errors/errors"
+	"errors"
 )
 
 var (
