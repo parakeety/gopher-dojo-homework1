@@ -7,57 +7,94 @@ Options
 package converter
 
 import (
-	"flag"
-	"strings"
-	"path/filepath"
-	"os"
+	"errors"
+	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
-	"errors"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"golang.org/x/sync/errgroup"
 )
 
-var (
-	inputExt = flag.String("input", "jpg", "input image format. i.e) -input=jpg")
-	outputExt = flag.String("output", "png", "output image format. i.e) -output=png")
-)
+func Convert(dir, input, output string) error {
+	// cleanse inputs
+	dirRoot := strings.TrimSpace(dir)
+	inputExt := strings.TrimSpace(input)
+	outputExt := strings.TrimSpace(output)
 
-type CommandLine interface {
-	Execute() error
+	if err := validateInputs(dirRoot, inputExt, outputExt); err != nil {
+		return err
+	}
+
+	if !strings.HasPrefix(inputExt, ".") {
+		inputExt = "." + inputExt
+	}
+
+	if !strings.HasPrefix(outputExt, ".") {
+		outputExt = "." + outputExt
+	}
+
+	imagePaths, err := findImagePaths(dirRoot, inputExt)
+	if err != nil {
+		return err
+	}
+
+	eg := errgroup.Group{}
+	for _, path := range imagePaths {
+		eg.Go(func() error {
+			return convert(path, inputExt, outputExt)
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-type converter struct {
-	InputExt string
-	OutputExt string
+func validateInputs(src, input, output string) error {
+	inputs := map[string]string{
+		"src":    src,
+		"input":  input,
+		"output": output,
+	}
+
+	for key, value := range inputs {
+		fmt.Println(key, len(value))
+		if len(value) == 0 {
+			return fmt.Errorf("%s is empty", key)
+		}
+	}
+	if !isSupportedFormat(input) {
+		return errors.New("specified input extension is not supported")
+	}
+
+	if !isSupportedFormat(output) {
+		return errors.New("specified output extension is not supported")
+	}
+
+	if input == output {
+		return errors.New("please specify different extensions for input " +
+			"& output")
+	}
+	return nil
 }
 
-func Converter() CommandLine {
-	flag.Parse()
-
-	inputImgExt := *inputExt
-	if !strings.HasPrefix(inputImgExt, ".") {
-		inputImgExt = "." + inputImgExt
-	}
-
-	outputImgExt := *outputExt
-	if !strings.HasPrefix(outputImgExt, ".") {
-		outputImgExt = "." + outputImgExt
-	}
-
-	return &converter{
-		InputExt: inputImgExt,
-		OutputExt: outputImgExt,
+func isSupportedFormat(ext string) bool {
+	switch ext {
+	case "jpeg", "jpg", "png":
+		return true
+	default:
+		return false
 	}
 }
-
-func (c *converter) Execute() error {
-	if len(flag.Args()) == 0 {
-		return errors.New("please pass the directory where images you'd like to convert exist")
-	}
-
-	dirRoot := flag.Args()[0]
-
-	return filepath.Walk(dirRoot, func(path string, info os.FileInfo, err error) error {
+func findImagePaths(dirRoot, inputExt string) ([]string, error) {
+	var imagePaths []string
+	err := filepath.Walk(dirRoot, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -66,50 +103,55 @@ func (c *converter) Execute() error {
 			return nil
 		}
 
-		if filepath.Ext(path) != c.InputExt {
-			return nil
-		}
-
-		inputFile, err := os.Open(path)
-		if err != nil {
-			return err
-		}
-		defer inputFile.Close()
-
-		var img image.Image
-		switch c.InputExt {
-		case ".jpg", ".jpeg":
-			img, err = jpeg.Decode(inputFile)
-		case ".png":
-			img, err = png.Decode(inputFile)
-		default:
-			return errors.New("unsupported image extension")
-		}
-
-		if err != nil {
-			return err
-		}
-
-		outputPath := strings.TrimSuffix(path, c.InputExt) + c.OutputExt
-		outputFile, err := os.Create(outputPath)
-		if err != nil {
-			return err
-		}
-		defer outputFile.Close()
-
-		switch c.OutputExt {
-		case ".jpg", ".jpeg":
-			err = jpeg.Encode(outputFile, img, nil)
-		case ".png":
-			err = png.Encode(outputFile, img)
-		default:
-			return errors.New("unsupported image extension")
-		}
-
-		if err != nil {
-			return err
+		if filepath.Ext(path) == inputExt {
+			imagePaths = append(imagePaths, path)
 		}
 
 		return nil
 	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return imagePaths, nil
+}
+
+func convert(path, inputExt, outputExt string) error {
+	inputFile, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer inputFile.Close()
+
+	var img image.Image
+	switch inputExt {
+	case ".jpg", ".jpeg":
+		img, err = jpeg.Decode(inputFile)
+	case ".png":
+		img, err = png.Decode(inputFile)
+	default:
+		return errors.New("unsupported image extension")
+	}
+
+	if err != nil {
+		return err
+	}
+
+	outputPath := strings.TrimSuffix(path, inputExt) + outputExt
+	outputFile, err := os.Create(outputPath)
+	if err != nil {
+		return err
+	}
+	defer outputFile.Close()
+
+	switch outputExt {
+	case ".jpg", ".jpeg":
+		err = jpeg.Encode(outputFile, img, nil)
+	case ".png":
+		err = png.Encode(outputFile, img)
+	default:
+		return errors.New("unsupported image extension")
+	}
+	return err
 }
