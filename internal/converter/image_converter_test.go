@@ -39,7 +39,7 @@ func TestConvert(t *testing.T) {
 	}
 
 	for _, tc := range successCases {
-		t.Run(tc.input+"->"+tc.output, func(t *testing.T) {
+		t.Run(tc.input+" -> "+tc.output, func(t *testing.T) {
 			testConvert(t, tc.input, tc.output, tc.outputPath)
 		})
 	}
