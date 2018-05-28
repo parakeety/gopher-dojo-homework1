@@ -40,15 +40,7 @@ func TestConvert(t *testing.T) {
 
 	for _, tc := range successCases {
 		t.Run(tc.input+"->"+tc.output, func(t *testing.T) {
-			err := Convert(testdataDir, tc.input, tc.output)
-			if err != nil {
-				t.Errorf("expected error to be nil: %v", err)
-			}
-
-			if _, err := os.Stat(tc.outputPath); os.IsNotExist(err) {
-				t.Errorf("expected output file at path: %s", tc.outputPath)
-			}
-			os.Remove(tc.outputPath)
+			testConvert(t, tc.input, tc.output, tc.outputPath)
 		})
 	}
 }
@@ -63,4 +55,18 @@ func compareErrors(err1, err2 error) bool {
 	}
 
 	return false
+}
+
+func testConvert(t *testing.T, input, output, outputPath string) {
+	t.Helper()
+
+	err := Convert(testdataDir, input, output)
+	if err != nil {
+		t.Errorf("expected error to be nil: %v", err)
+	}
+
+	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
+		t.Errorf("expected output file at path: %s", outputPath)
+	}
+	os.Remove(outputPath)
 }
