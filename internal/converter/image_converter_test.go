@@ -16,13 +16,12 @@ func TestConvert(t *testing.T) {
 	}{
 		{"", "jpeg", errors.New("input is empty")},
 		{"png", "", errors.New("output is empty")},
-		{"png", "png", errors.New(
-			"please specify different extensions for input & output")},
+		{"png", "png", errors.New("please specify different extensions for input & output")},
 		{"gif", "jpg", errors.New("specified input extension is not supported")},
 	}
 
 	for _, tc := range errorCases {
-		t.Run(tc.input+"->"+tc.output, func(t *testing.T) {
+		t.Run(tc.input+" -> "+tc.output, func(t *testing.T) {
 			err := Convert(testdataDir, tc.input, tc.output)
 			if !compareErrors(err, tc.expected) {
 				t.Errorf("actual: %v, expected: %v", err, tc.expected)
