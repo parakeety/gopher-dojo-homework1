@@ -64,7 +64,6 @@ func validateInputs(src, input, output string) error {
 	}
 
 	for key, value := range inputs {
-		fmt.Println(key, len(value))
 		if len(value) == 0 {
 			return fmt.Errorf("%s is empty", key)
 		}
