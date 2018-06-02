@@ -68,5 +68,7 @@ func testConvert(t *testing.T, input, output, outputPath string) {
 	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
 		t.Errorf("expected output file at path: %s", outputPath)
 	}
-	os.Remove(outputPath)
+	if err := os.Remove(outputPath); err != nil {
+		t.Fatalf("failed remove output file: %v", err)
+	}
 }
