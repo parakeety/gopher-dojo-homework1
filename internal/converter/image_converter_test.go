@@ -62,7 +62,7 @@ func testConvert(t *testing.T, input, output, outputPath string) {
 
 	err := Convert(testdataDir, input, output)
 	if err != nil {
-		t.Errorf("expected error to be nil: %v", err)
+		t.Fatalf("expected error to be nil: %v", err)
 	}
 
 	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
