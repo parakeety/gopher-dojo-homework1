@@ -42,7 +42,7 @@ func Convert(dir, input, output string) error {
 		return err
 	}
 
-	eg := errgroup.Group{}
+	var eg errgroup.Group
 	for _, path := range imagePaths {
 		eg.Go(func() error {
 			return convert(path, inputExt, outputExt)
