@@ -17,7 +17,7 @@ var (
 func main() {
 	flag.Parse()
 
-	if len(flag.Args()) == 0 {
+	if flag.NArg() == 0 {
 		panic("no directory to parse specified") // should add as a testcase...?
 	}
 
